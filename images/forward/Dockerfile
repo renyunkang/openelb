@@ -5,6 +5,7 @@
 FROM alpine
 WORKDIR /
 COPY images/forward/entry-point.sh /entry-point.sh
+RUN apk add --no-cache bash
 RUN apk update && apk add iptables && \
     chmod +x /entry-point.sh
 CMD [ "/entry-point.sh" ]

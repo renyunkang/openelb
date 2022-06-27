@@ -30,8 +30,8 @@ require (
 	go.uber.org/zap v1.10.0
 	golang.org/x/net v0.0.0-20200528225125-3c3fba18258b
 	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
-	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543 // indirect
 	google.golang.org/grpc v1.26.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	k8s.io/api v0.18.2
 	k8s.io/apimachinery v0.18.2
 	k8s.io/apiserver v0.18.2

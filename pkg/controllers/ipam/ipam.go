@@ -145,6 +145,9 @@ func SetupIPAM(mgr ctrl.Manager) error {
 func (i *IPAM) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	eip := &networkv1alpha2.Eip{}
 
+	log := ctrl.Log.WithValues("eip", req.NamespacedName)
+	log.Info("setup openelb eip")
+
 	err := i.Get(context.TODO(), req.NamespacedName, eip)
 	if err != nil {
 		if k8serrors.IsNotFound(err) {
@@ -436,7 +439,8 @@ func (i *IPAM) UnAssignIP(args IPAMArgs, peek bool) (IPAMResult, error) {
 		if addr != "" {
 			if !reflect.DeepEqual(clone, eip) && !peek {
 				err = i.Client.Status().Update(context.Background(), clone)
-				ctrl.Log.Info("unAssignIP update eip", "eip", clone.Status)
+				i.log.Info("unAssignIP update eip")
+				//ctrl.Log.Info("unAssignIP update eip", "eip", clone.Status)
 			}
 
 			result.Addr = addr

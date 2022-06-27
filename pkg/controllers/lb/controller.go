@@ -285,8 +285,11 @@ func (r *ServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	err := r.Get(context.TODO(), req.NamespacedName, svc)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			log.V(1).Info("service not found")
 			return ctrl.Result{}, nil
 		}
+
+		log.V(1).Info("service get error ", err)
 		return ctrl.Result{}, err
 	}
 
@@ -331,7 +334,16 @@ func (r *ServiceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-	return ctrl.Result{}, r.updateServiceEipInfo(result, svc)
+	if err := r.updateServiceEipInfo(result, svc); err != nil {
+		if errors.IsConflict(err) {
+			log.Info("update svc conflict, requeue")
+			return ctrl.Result{Requeue: true}, nil
+		} else {
+			log.Error(err, "update svc info err")
+			return ctrl.Result{}, err
+		}
+	}
+	return ctrl.Result{}, nil
 }
 
 func (r *ServiceReconciler) updateServiceEipInfo(result ipam.IPAMResult, svc *corev1.Service) error {

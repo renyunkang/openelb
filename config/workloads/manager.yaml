@@ -45,6 +45,7 @@ spec:
           args:
             - --api-hosts=:50051
             - --webhook-port=443
+            - --zap-log-level=debug
           image: controller:latest
           imagePullPolicy: IfNotPresent
           name: openelb-manager

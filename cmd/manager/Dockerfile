@@ -1,5 +1,6 @@
 FROM alpine
 WORKDIR /
+RUN apk add --no-cache bash
 RUN apk add iptables
 ARG TARGETOS
 ARG TARGETARCH
