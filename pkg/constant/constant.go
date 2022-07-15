@@ -26,7 +26,6 @@ const (
 	EnvArgSplitter                    string = " "
 	NodeProxyWorkloadPrefix           string = "node-proxy-"
 	NodeProxyFinalizerName            string = "node-proxy.openelb.kubesphere.io/finalizer"
-	NodeProxyConfigMapName            string = "node-proxy-config"
 	NodeProxyConfigMapForwardImage    string = "forward-image"
 	NodeProxyConfigMapProxyImage      string = "proxy-image"
 
@@ -53,7 +52,10 @@ const (
 	OpenELBVipConfigMap       = "openelb-vip-configmap"
 	OpenELBVipName            = "openelb-keepalive-vip"
 	OpenELBServiceAccountName = "kube-keepalived-vip"
-	OpenELBKeepAliveImageName = "aledbf/kube-keepalived-vip:0.35"
+	OpenELBKeepAliveImageName = "kubesphere/kube-keepalived-vip:0.35"
 	EnvOpenELBNamespace       = "OPENELB_NAMESPACE"
 	EnvNodeName               = "NODE_NAME"
+
+	OpenELBImagesConfigMap          = "openelb-images"
+	OpenELBConfigMapVIPImage string = "keepalived-vip-image"
 )
