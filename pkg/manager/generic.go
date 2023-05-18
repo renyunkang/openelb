@@ -2,7 +2,8 @@ package manager
 
 import (
 	networkv1alpha2 "github.com/openelb/openelb/api/v1alpha2"
-	"github.com/openelb/openelb/pkg/manager/client"
+	"github.com/openelb/openelb/pkg/client"
+	"github.com/openelb/openelb/pkg/constant"
 	"github.com/spf13/pflag"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -15,18 +16,22 @@ import (
 )
 
 type GenericOptions struct {
-	WebhookPort    int
-	MetricsAddr    string
-	ReadinessAddr  string
-	KeepalivedPort int
+	WebhookPort      int
+	MetricsAddr      string
+	ReadinessAddr    string
+	KeepalivedPort   int
+	LeaderElector    bool
+	LeaderElectionID string
 }
 
 func NewGenericOptions() *GenericOptions {
 	return &GenericOptions{
-		WebhookPort:   443,
-		MetricsAddr:   ":50052",
-		ReadinessAddr: "0",
-		KeepalivedPort: 8080,
+		WebhookPort:      443,
+		MetricsAddr:      ":50052",
+		ReadinessAddr:    "0",
+		KeepalivedPort:   8080,
+		LeaderElector:    true,
+		LeaderElectionID: constant.OpenELBControllerLocker,
 	}
 }
 
@@ -35,6 +40,7 @@ func (options *GenericOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.StringVar(&options.MetricsAddr, "metrics-addr", options.MetricsAddr, "The address the metric endpoint binds to.")
 	fs.StringVar(&options.ReadinessAddr, "readiness-addr", options.ReadinessAddr, "The address readinessProbe used")
 	fs.IntVar(&options.KeepalivedPort, "keepalived-http-port", options.KeepalivedPort, "The port number used by keepalived for the http-port")
+	fs.BoolVar(&options.LeaderElector, "leader-elect", options.LeaderElector, "Enable leader election for controller manager")
 }
 
 func NewManager(cfg *rest.Config, options *GenericOptions) (ctrl.Manager, error) {
@@ -44,6 +50,8 @@ func NewManager(cfg *rest.Config, options *GenericOptions) (ctrl.Manager, error)
 	if options != nil {
 		opts.Port = options.WebhookPort
 		opts.MetricsBindAddress = options.MetricsAddr
+		opts.LeaderElection = options.LeaderElector
+		opts.LeaderElectionID = options.LeaderElectionID
 	}
 	result, err := ctrl.NewManager(cfg, opts)
 
