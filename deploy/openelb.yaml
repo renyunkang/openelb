@@ -1246,6 +1246,17 @@ spec:
         image: kubesphere/openelb-speaker:v0.6.0
         imagePullPolicy: IfNotPresent
         name: openelb-speaker
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - |
+              gobgp -p 50051 global
+          failureThreshold: 3
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
         resources:
           limits:
             cpu: 100m
