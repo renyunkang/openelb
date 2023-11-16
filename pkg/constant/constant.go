@@ -55,6 +55,7 @@ const (
 	EnvNodeName               = "NODE_NAME"
 
 	// default images and specify images
+	OpenELBVIPEnvConfigMap         = "keepalived-vip-config"
 	OpenELBImagesConfigMap         = "openelb-images"
 	NodeProxyConfigMapForwardImage = "forward-image"
 	NodeProxyConfigMapProxyImage   = "proxy-image"

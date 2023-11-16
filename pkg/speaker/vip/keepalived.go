@@ -294,6 +294,36 @@ func (k *KeepAlived) generateVIPDaemonSet(ref metav1.OwnerReference) *appv1.Daem
 										},
 									},
 								},
+								{
+									Name: "KEEPALIVED_NODEIP",
+									ValueFrom: &corev1.EnvVarSource{
+										FieldRef: &corev1.ObjectFieldSelector{
+											FieldPath: "status.hostIP",
+										},
+									},
+								},
+								{
+									Name: "KEEPALIVED_NODES_TYPE",
+									ValueFrom: &corev1.EnvVarSource{
+										ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+											Key: "type",
+											LocalObjectReference: corev1.LocalObjectReference{
+												Name: constant.OpenELBVIPEnvConfigMap,
+											},
+										},
+									},
+								},
+								{
+									Name: "KEEPALIVED_CLUSTER_NODES",
+									ValueFrom: &corev1.EnvVarSource{
+										ConfigMapKeyRef: &corev1.ConfigMapKeySelector{
+											Key: "cluster-nodes",
+											LocalObjectReference: corev1.LocalObjectReference{
+												Name: constant.OpenELBVIPEnvConfigMap,
+											},
+										},
+									},
+								},
 							},
 							Args: k.conf.Args,
 						},
