@@ -104,7 +104,8 @@ require (
 )
 
 replace (
-	k8s.io/apimachinery => k8s.io/apimachinery v0.24.9
-	k8s.io/client-go => k8s.io/client-go v0.24.9
+	k8s.io/api => ./staging/src/k8s.io/api
+	k8s.io/apimachinery => ./staging/src/k8s.io/apimachinery
+	k8s.io/client-go => ./staging/src/k8s.io/client-go
 	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.13.0
 )
