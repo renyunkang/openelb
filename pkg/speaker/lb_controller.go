@@ -18,8 +18,11 @@ package speaker
 
 import (
 	"context"
+	"reflect"
 
+	"github.com/openelb/openelb/api/v1alpha2"
 	"github.com/openelb/openelb/pkg/constant"
+	"github.com/openelb/openelb/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -108,6 +111,47 @@ func (r *LBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(p).
 		Named("LBController").
 		Build(r)
+	if err != nil {
+		return err
+	}
+
+	bp := predicate.Funcs{
+		CreateFunc: func(e event.CreateEvent) bool {
+			return false
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			old := e.ObjectOld.(*v1alpha2.BgpConf)
+			new := e.ObjectNew.(*v1alpha2.BgpConf)
+
+			return !reflect.DeepEqual(old.Annotations, new.Annotations)
+		},
+	}
+	err = ctl.Watch(&source.Kind{Type: &v1alpha2.BgpConf{}}, &EnqueueRequestForNode{Client: r.Client}, bp)
+	if err != nil {
+		return err
+	}
+
+	np := predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			if util.NodeReady(e.ObjectOld) != util.NodeReady(e.ObjectNew) {
+				return true
+			}
+			if nodeAddrChange(e.ObjectOld, e.ObjectNew) {
+				return true
+			}
+			return false
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			return false
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			return false
+		},
+	}
+	err = ctl.Watch(&source.Kind{Type: &corev1.Node{}}, &EnqueueRequestForNode{Client: r.Client}, np)
 	if err != nil {
 		return err
 	}

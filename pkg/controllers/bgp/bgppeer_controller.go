@@ -202,7 +202,9 @@ func (r BgpPeerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 				return false
 			},
-		}).Complete(r)
+		}).
+		Named("BgpPeerController").
+		Complete(r)
 }
 
 func SetupBgpPeerReconciler(bgpServer *bgp.Bgp, mgr ctrl.Manager) error {

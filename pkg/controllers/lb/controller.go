@@ -22,11 +22,9 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	"github.com/openelb/openelb/api/v1alpha2"
 	networkv1alpha2 "github.com/openelb/openelb/api/v1alpha2"
 	"github.com/openelb/openelb/pkg/constant"
 	"github.com/openelb/openelb/pkg/controllers/ipam"
-	"github.com/openelb/openelb/pkg/util"
 	"github.com/openelb/openelb/pkg/validate"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -38,7 +36,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -112,68 +109,6 @@ func (r *ServiceReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		WithEventFilter(p).
 		Named("LBController").
 		Build(r)
-	if err != nil {
-		return err
-	}
-
-	//endpoints
-	ep := predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			return r.shouldReconcileEP(e.ObjectNew)
-		},
-		CreateFunc: func(e event.CreateEvent) bool {
-			return r.shouldReconcileEP(e.Object)
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			return r.shouldReconcileEP(e.Object)
-		},
-	}
-	err = ctl.Watch(&source.Kind{Type: &corev1.Endpoints{}}, &handler.EnqueueRequestForObject{}, ep)
-	if err != nil {
-		return err
-	}
-
-	bp := predicate.Funcs{
-		CreateFunc: func(e event.CreateEvent) bool {
-			return false
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			return false
-		},
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			old := e.ObjectOld.(*v1alpha2.BgpConf)
-			new := e.ObjectNew.(*v1alpha2.BgpConf)
-
-			if !reflect.DeepEqual(old.Annotations, new.Annotations) {
-				return true
-			}
-
-			return false
-		},
-	}
-	err = ctl.Watch(&source.Kind{Type: &v1alpha2.BgpConf{}}, &EnqueueRequestForNode{Client: r.Client}, bp)
-	if err != nil {
-		return err
-	}
-
-	np := predicate.Funcs{
-		UpdateFunc: func(e event.UpdateEvent) bool {
-			if util.NodeReady(e.ObjectOld) != util.NodeReady(e.ObjectNew) {
-				return true
-			}
-			if nodeAddrChange(e.ObjectOld, e.ObjectNew) {
-				return true
-			}
-			return false
-		},
-		CreateFunc: func(e event.CreateEvent) bool {
-			return false
-		},
-		DeleteFunc: func(e event.DeleteEvent) bool {
-			return false
-		},
-	}
-	err = ctl.Watch(&source.Kind{Type: &corev1.Node{}}, &EnqueueRequestForNode{Client: r.Client}, np)
 	if err != nil {
 		return err
 	}
