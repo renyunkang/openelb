@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	networkv1alpha2 "github.com/openelb/openelb/api/v1alpha2"
 	"github.com/openelb/openelb/cmd/controller/app/options"
 	"github.com/openelb/openelb/pkg/controllers/ipam"
 	"github.com/openelb/openelb/pkg/controllers/lb"
+	"github.com/openelb/openelb/pkg/controllers/webhook"
 	"github.com/openelb/openelb/pkg/log"
 	"github.com/openelb/openelb/pkg/manager"
 	_ "github.com/openelb/openelb/pkg/metrics"
@@ -85,12 +85,14 @@ func Run(c *options.OpenELBManagerOptions) error {
 	}
 
 	// Setup all Controllers
-	err = ipam.SetupWithManager(mgr)
-	if err != nil {
+	if err := ipam.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to setup ipam")
 		return err
 	}
-	networkv1alpha2.Eip{}.SetupWebhookWithManager(mgr)
+	if err := webhook.SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to setup webhook manager")
+		return err
+	}
 
 	if err = lb.SetupServiceReconciler(mgr); err != nil {
 		setupLog.Error(err, "unable to setup lb controller")

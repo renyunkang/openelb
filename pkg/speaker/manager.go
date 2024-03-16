@@ -105,13 +105,18 @@ func (m *Manager) HandleEIP(eip *v1alpha2.Eip) error {
 		return nil
 	}
 
-	spaeker := m.GetSpeaker(eip.GetProtocol())
+	protocol := eip.Spec.Protocol
+	if protocol == "" {
+		protocol = constant.OpenELBProtocolBGP
+	}
+
+	spaeker := m.GetSpeaker(protocol)
 	if spaeker == nil {
-		m.Info(fmt.Sprintf("no registered speaker:[%s] eip:[%s]", eip.GetProtocol(), eip.GetName()))
+		m.Info(fmt.Sprintf("no registered speaker:[%s] eip:[%s]", protocol, eip.GetName()))
 		return nil
 	}
 
-	if eip.GetProtocol() == constant.OpenELBProtocolLayer2 {
+	if protocol == constant.OpenELBProtocolLayer2 {
 		m.Queue.Add(eip)
 	}
 
@@ -267,7 +272,10 @@ func (m *Manager) getSvcRecordInfo(svc *corev1.Service) *recordInfo {
 		return r
 	}
 
-	r.speaker = eip.GetSpeakerName()
+	r.speaker = eip.Spec.Protocol
+	if eip.Spec.Protocol == "" {
+		r.speaker = constant.OpenELBProtocolBGP
+	}
 	return r
 }
 

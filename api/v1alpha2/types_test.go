@@ -125,23 +125,4 @@ var _ = Describe("Test eip types", func() {
 		Expect(e.Contains(net.ParseIP("192.168.0.99"))).Should(BeFalse())
 		Expect(e.Contains(net.ParseIP("192.168.0.201"))).Should(BeFalse())
 	})
-
-	It("Test ValidateUpdate", func() {
-		e := &Eip{
-			TypeMeta:   metav1.TypeMeta{},
-			ObjectMeta: metav1.ObjectMeta{},
-			Spec: EipSpec{
-				Address: "192.168.0.100-192.168.0.200",
-			},
-			Status: EipStatus{},
-		}
-
-		e2 := e.DeepCopy()
-		e2.Spec.Address = "192.168.0.100"
-		Expect(e2.ValidateUpdate(e)).Should(HaveOccurred())
-
-		e2 = e.DeepCopy()
-		e2.Spec.Disable = true
-		Expect(e2.ValidateUpdate(e)).ShouldNot(HaveOccurred())
-	})
 })

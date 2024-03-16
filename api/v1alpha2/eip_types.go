@@ -16,90 +16,15 @@ limitations under the License.
 package v1alpha2
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net"
-	"reflect"
 	"strings"
 
-	"github.com/openelb/openelb/pkg/client"
-	"github.com/openelb/openelb/pkg/util"
-	"github.com/openelb/openelb/pkg/validate"
-
 	"github.com/openelb/openelb/pkg/constant"
-
 	cnet "github.com/openelb/openelb/pkg/util/net"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	ctrl "sigs.k8s.io/controller-runtime"
-	// "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
-
-func (e Eip) IPToOrdinal(ip net.IP) int {
-	base, size, err := e.GetSize()
-	if err != nil {
-		return -1
-	}
-	ipAsInt := cnet.IPToBigInt(cnet.IP{IP: ip})
-	baseInt := cnet.IPToBigInt(cnet.IP{IP: base})
-	ord := big.NewInt(0).Sub(ipAsInt, baseInt).Int64()
-	if ord < 0 || ord >= size {
-		return -1
-	}
-	return int(ord)
-}
-
-func (e Eip) GetSpeakerName() string {
-	if util.DutyOfCNI(nil, &e.ObjectMeta) {
-		return constant.OpenELBProtocolDummy
-	}
-
-	return e.GetProtocol()
-}
-
-func (e Eip) GetProtocol() string {
-	if e.Spec.Protocol == constant.OpenELBProtocolLayer2 {
-		return constant.OpenELBProtocolLayer2
-	}
-	if e.Spec.Protocol == constant.OpenELBProtocolVip {
-		return constant.OpenELBProtocolVip
-	}
-	return constant.OpenELBProtocolBGP
-}
-
-func (e Eip) GetSize() (net.IP, int64, error) {
-	ip := net.ParseIP(e.Spec.Address)
-	if ip != nil {
-		return ip, 1, nil
-	}
-
-	_, cidr, err := net.ParseCIDR(e.Spec.Address)
-	if err == nil {
-		ones, size := cidr.Mask.Size()
-		num := 1 << uint(size-ones)
-		return cidr.IP, int64(num), nil
-	}
-
-	strs := strings.SplitN(e.Spec.Address, constant.EipRangeSeparator, 2)
-	if len(strs) != 2 {
-		return nil, 0, fmt.Errorf("invalid eip address format")
-	}
-	base := cnet.ParseIP(strs[0])
-	last := cnet.ParseIP(strs[1])
-	if base == nil || last == nil {
-		return nil, 0, fmt.Errorf("invalid eip address format")
-	}
-
-	ord := big.NewInt(0).Sub(cnet.IPToBigInt(*last), cnet.IPToBigInt(*base)).Int64()
-	if ord < 0 {
-		return nil, 0, fmt.Errorf("invalid eip address format")
-	}
-
-	return base.IP, ord + 1, nil
-}
-
-// var _ webhook.Validator = &Eip{}
 
 // EipSpec defines the desired state of EIP
 type EipSpec struct {
@@ -157,9 +82,68 @@ type EipList struct {
 	Items           []Eip `json:"items"`
 }
 
-// +kubebuilder:webhook:admissionReviewVersions=v1,path=/validate-network-kubesphere-io-v1alpha2-eip,mutating=false,sideEffects=NoneOnDryRun,failurePolicy=fail,groups=network.kubesphere.io,resources=eips,verbs=create;update;delete,versions=v1alpha2,name=validate.eip.network.kubesphere.io
+func init() {
+	SchemeBuilder.Register(&Eip{}, &EipList{})
+}
 
-func (e Eip) IsOverlap(eip Eip) bool {
+// GetSize returns the base IP, the size of the ips, and an error if the address is invalid
+// address can be an IP, CIDR, or a range of ips
+func (e Eip) GetSize() (net.IP, int64, error) {
+	// if addr is an IP, return the IP and size 1
+	ip := net.ParseIP(e.Spec.Address)
+	if ip != nil {
+		return ip, 1, nil
+	}
+
+	// if addr is a CIDR, return the base IP and the size of the ips
+	_, cidr, err := net.ParseCIDR(e.Spec.Address)
+	if err == nil {
+		ones, size := cidr.Mask.Size()
+		num := 1 << uint(size-ones)
+		return cidr.IP, int64(num), nil
+	}
+
+	// if addr is a range of ips, return the base IP and the size of the ips
+	strs := strings.SplitN(e.Spec.Address, constant.EipRangeSeparator, 2)
+	if len(strs) != 2 {
+		return nil, 0, fmt.Errorf("invalid eip address format")
+	}
+	base := cnet.ParseIP(strs[0])
+	last := cnet.ParseIP(strs[1])
+	if base == nil || last == nil {
+		return nil, 0, fmt.Errorf("invalid eip address format")
+	}
+
+	ord := big.NewInt(0).Sub(cnet.IPToBigInt(*last), cnet.IPToBigInt(*base)).Int64()
+	if ord < 0 {
+		return nil, 0, fmt.Errorf("invalid eip address format")
+	}
+
+	return base.IP, ord + 1, nil
+}
+
+func (e Eip) Contains(ip net.IP) bool {
+	base, size, _ := e.GetSize()
+
+	return cnet.IPToBigInt(cnet.IP{IP: ip}).Cmp(cnet.IPToBigInt(cnet.IP{IP: base})) >= 0 &&
+		cnet.IPToBigInt(cnet.IP{IP: ip}).Cmp(big.NewInt(0).Add(cnet.IPToBigInt(cnet.IP{IP: base}), big.NewInt(size-1))) <= 0
+}
+
+func (e Eip) IPToOrdinal(ip net.IP) int {
+	base, size, err := e.GetSize()
+	if err != nil {
+		return -1
+	}
+	ipAsInt := cnet.IPToBigInt(cnet.IP{IP: ip})
+	baseInt := cnet.IPToBigInt(cnet.IP{IP: base})
+	ord := big.NewInt(0).Sub(ipAsInt, baseInt).Int64()
+	if ord < 0 || ord >= size {
+		return -1
+	}
+	return int(ord)
+}
+
+func (e *Eip) IsOverlap(eip Eip) bool {
 	base, size, _ := e.GetSize()
 
 	tBase, tSize, _ := eip.GetSize()
@@ -171,115 +155,4 @@ func (e Eip) IsOverlap(eip Eip) bool {
 		return false
 	}
 	return true
-}
-
-func (e Eip) Contains(ip net.IP) bool {
-	base, size, _ := e.GetSize()
-
-	return cnet.IPToBigInt(cnet.IP{IP: ip}).Cmp(cnet.IPToBigInt(cnet.IP{IP: base})) >= 0 &&
-		cnet.IPToBigInt(cnet.IP{IP: ip}).Cmp(big.NewInt(0).Add(cnet.IPToBigInt(cnet.IP{IP: base}), big.NewInt(size-1))) <= 0
-}
-
-func (e Eip) IsDefault() bool {
-	return e.Annotations[constant.OpenELBEIPAnnotationDefaultPool] == "true"
-}
-
-func (e Eip) ValidateCreate() error {
-	_, _, err := e.GetSize()
-	if err != nil {
-		return err
-	}
-
-	if e.Spec.Protocol == constant.OpenELBProtocolLayer2 && e.Spec.Interface == "" {
-		return fmt.Errorf("field spec.interface should not be empty")
-	}
-	return e.validate(true)
-}
-
-func (e Eip) validate(overlap bool) error {
-	eips := &EipList{}
-	if err := client.Client.List(context.Background(), eips); err != nil {
-		return err
-	}
-
-	if overlap {
-		if err := e.validateOverlap(eips); err != nil {
-			return err
-		}
-	}
-
-	return e.validateDefault(eips)
-
-}
-
-func (e Eip) validateDefault(eips *EipList) error {
-	if eips == nil {
-		return nil
-	}
-
-	if !validate.HasOpenELBDefaultEipAnnotation(e.Annotations) {
-		return nil
-	}
-
-	for _, eip := range eips.Items {
-		if eip.Name == e.Name {
-			continue
-		}
-
-		if validate.HasOpenELBDefaultEipAnnotation(eip.Annotations) {
-			return fmt.Errorf("already exists a default EIP")
-		}
-	}
-
-	return nil
-}
-
-func (e Eip) validateOverlap(eips *EipList) error {
-	if eips == nil {
-		return nil
-	}
-
-	for _, eip := range eips.Items {
-		if eip.Name == e.Name {
-			continue
-		}
-
-		if e.IsOverlap(eip) {
-			return fmt.Errorf("eip address overlap with %s", eip.Name)
-		}
-	}
-
-	return nil
-}
-
-func (e Eip) ValidateUpdate(old runtime.Object) error {
-	oldE := old.(*Eip)
-	if !reflect.DeepEqual(e.Annotations, oldE.Annotations) {
-		if err := e.validate(false); err != nil {
-			return err
-		}
-	}
-
-	if !reflect.DeepEqual(e.Spec, oldE.Spec) {
-		if e.Spec.Address != oldE.Spec.Address {
-			return fmt.Errorf("the address field is not allowed to be modified")
-		}
-	}
-
-	return nil
-}
-
-// TODO :validate eip is not used:
-func (e Eip) ValidateDelete() error {
-	return nil
-}
-
-func (e Eip) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&e).
-		Complete()
-}
-
-func init() {
-	SchemeBuilder.Register(&Eip{}, &EipList{})
 }
