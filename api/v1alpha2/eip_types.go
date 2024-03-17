@@ -33,7 +33,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	// "sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 func (e Eip) IPToOrdinal(ip net.IP) int {
@@ -99,7 +99,7 @@ func (e Eip) GetSize() (net.IP, int64, error) {
 	return base.IP, ord + 1, nil
 }
 
-var _ webhook.Validator = &Eip{}
+// var _ webhook.Validator = &Eip{}
 
 // EipSpec defines the desired state of EIP
 type EipSpec struct {

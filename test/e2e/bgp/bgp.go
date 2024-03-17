@@ -94,7 +94,7 @@ var _ = framework.KubesphereDescribe("[OpenELB:BGP]", func() {
 		pod := framework.MakePod(ns, podName, map[string]string{"app": "gobgp-peer"}, map[string]string{"podsecuritypolicy.policy/disabled": "true"}, "rykren/gobgp:latest", commands, nil)
 		_ = podClient.CreateSync(pod)
 
-		err := e2epod.WaitTimeoutForPodReadyInNamespace(c, podName, ns, 30*time.Second)
+		err := e2epod.WaitTimeoutForPodReadyInNamespace(ctx, c, podName, ns, 30*time.Second)
 		framework.ExpectNoError(err)
 
 		peerPod, err = c.CoreV1().Pods(ns).Get(ctx, podName, metav1.GetOptions{})
@@ -158,9 +158,9 @@ var _ = framework.KubesphereDescribe("[OpenELB:BGP]", func() {
 
 		ginkgo.By("Adding service")
 		tcpJig := e2eservice.NewTestJig(c, ns, "test-service")
-		_, err = tcpJig.CreateTCPService(nil)
+		_, err = tcpJig.CreateTCPService(ctx, nil)
 		framework.ExpectNoError(err)
-		_, err = tcpJig.UpdateService(func(s *v1.Service) {
+		_, err = tcpJig.UpdateService(ctx, func(s *v1.Service) {
 			s.Spec.Type = v1.ServiceTypeLoadBalancer
 			if s.ObjectMeta.Annotations == nil {
 				s.ObjectMeta.Annotations = map[string]string{}
@@ -171,7 +171,7 @@ var _ = framework.KubesphereDescribe("[OpenELB:BGP]", func() {
 		})
 
 		framework.ExpectNoError(err)
-		tcpservice, err := tcpJig.WaitForLoadBalancer(defaultTime * time.Second)
+		tcpservice, err := tcpJig.WaitForLoadBalancer(ctx, defaultTime*time.Second)
 		framework.ExpectNoError(err)
 		framework.Logf("ingress %v", tcpservice.Status.LoadBalancer.Ingress)
 

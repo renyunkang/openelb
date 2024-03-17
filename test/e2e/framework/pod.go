@@ -22,11 +22,11 @@ func (f *Framework) PodClientNS(namespace string) *PodClient {
 }
 
 func (c *PodClient) Create(pod *corev1.Pod) *corev1.Pod {
-	return c.PodClient.Create(pod)
+	return c.PodClient.Create(context.TODO(), pod)
 }
 
 func (c *PodClient) CreateSync(pod *corev1.Pod) *corev1.Pod {
-	return c.PodClient.CreateSync(pod)
+	return c.PodClient.CreateSync(context.TODO(), pod)
 }
 
 func (c *PodClient) Delete(name string) error {
@@ -34,16 +34,16 @@ func (c *PodClient) Delete(name string) error {
 }
 
 func (c *PodClient) DeleteSync(name string) {
-	c.PodClient.DeleteSync(name, metav1.DeleteOptions{}, timeout)
+	c.PodClient.DeleteSync(context.TODO(), name, metav1.DeleteOptions{}, timeout)
 }
 
 func (c *PodClient) WaitForRunning(name string) {
-	err := e2epod.WaitTimeoutForPodRunningInNamespace(c.f.ClientSet, name, c.f.Namespace.Name, timeout)
+	err := e2epod.WaitTimeoutForPodRunningInNamespace(context.TODO(), c.f.ClientSet, name, c.f.Namespace.Name, timeout)
 	ExpectNoError(err)
 }
 
 func (c *PodClient) WaitForNotFound(name string) {
-	err := e2epod.WaitForPodNotFoundInNamespace(c.f.ClientSet, name, c.f.Namespace.Name, timeout)
+	err := e2epod.WaitForPodNotFoundInNamespace(context.TODO(), c.f.ClientSet, name, c.f.Namespace.Name, timeout)
 	ExpectNoError(err)
 }
 
