@@ -12,11 +12,9 @@ import (
 	"github.com/openelb/openelb/api/v1alpha2"
 	"github.com/openelb/openelb/pkg/constant"
 	"github.com/openelb/openelb/test/e2e/framework"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	clientset "k8s.io/client-go/kubernetes"
-	"k8s.io/klog/v2"
 	e2eservice "k8s.io/kubernetes/test/e2e/framework/service"
 )
 
@@ -56,12 +54,6 @@ var _ = framework.KubesphereDescribe("[OpenELB:VIP]", func() {
 
 	ginkgo.It("Keepalived-vip", func() {
 		ctx := context.Background()
-
-		ginkgo.By("Waiting Keepalived-vip daemonset ready")
-		framework.WaitDaemonsetPresentFitWith(f.OpenELBClient, OpenELBNamespace, constant.OpenELBVipName, func(ds *appsv1.DaemonSet) bool {
-			klog.Infof("Desired:%d  ready:%d", ds.Status.DesiredNumberScheduled, ds.Status.NumberReady)
-			return ds.Status.DesiredNumberScheduled == ds.Status.NumberReady
-		})
 
 		// config openelb
 		ginkgo.By("Adding Eip")
