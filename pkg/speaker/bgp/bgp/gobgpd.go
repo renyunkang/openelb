@@ -21,7 +21,6 @@ func NewGoBgpd(bgpOptions *BgpOptions) *Bgp {
 
 	return &Bgp{
 		bgpServer: bgpServer,
-		log:       ctrl.Log.WithName("bgpserver"),
 	}
 }
 

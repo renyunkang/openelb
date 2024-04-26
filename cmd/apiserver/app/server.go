@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/openelb/openelb/cmd/apiserver/app/options"
-	"github.com/openelb/openelb/pkg/log"
 	"github.com/openelb/openelb/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -69,7 +68,6 @@ func NewOpenELBApiServerCommand() *cobra.Command {
 }
 
 func Run(c *options.OpenELBApiServerOptions) error {
-	log.InitLog(c.LogOptions)
 
 	//client, err := client.NewClient(ctrl.GetConfigOrDie())
 	//
