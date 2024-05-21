@@ -19,16 +19,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type speaker struct {
+type speakerWithCancelFunc struct {
 	Speaker
-	ch chan struct{}
+	cancel context.CancelFunc
 }
 
 type Manager struct {
 	client.Client
 	record.EventRecorder
 
-	speakers map[string]speaker
+	speakers map[string]speakerWithCancelFunc
 	pools    map[string]*v1alpha2.Eip
 }
 
@@ -36,40 +36,37 @@ func NewSpeakerManager(c client.Client, record record.EventRecorder) *Manager {
 	return &Manager{
 		Client:        c,
 		EventRecorder: record,
-		speakers:      make(map[string]speaker, 0),
+		speakers:      make(map[string]speakerWithCancelFunc, 0),
 		pools:         make(map[string]*v1alpha2.Eip, 0),
 	}
 }
 
-func (m *Manager) RegisterSpeaker(name string, s Speaker) error {
-	t := speaker{
-		Speaker: s,
-		ch:      make(chan struct{}),
+// TODO: Dynamically configure the speaker through configmap
+func (m *Manager) RegisterSpeaker(ctx context.Context, name string, s Speaker) error {
+	if s, exist := m.speakers[name]; exist && s.cancel != nil {
+		s.cancel()
 	}
 
-	if err := s.Start(t.ch); err != nil {
+	ctxChild, cancel := context.WithCancel(ctx)
+	if err := s.Start(ctxChild.Done()); err != nil {
+		cancel()
 		return err
 	}
 
-	m.speakers[name] = t
+	m.speakers[name] = speakerWithCancelFunc{Speaker: s, cancel: cancel}
 	return nil
 }
 
 func (m *Manager) UnRegisterSpeaker(name string) {
-	t, ok := m.speakers[name]
-	if ok {
-		close(t.ch)
+	if s, exist := m.speakers[name]; exist && s.cancel != nil {
+		s.cancel()
 	}
+
 	delete(m.speakers, name)
 }
 
 func (m *Manager) GetSpeaker(name string) Speaker {
-	t, ok := m.speakers[name]
-	if ok {
-		return t.Speaker
-	}
-
-	return nil
+	return m.speakers[name]
 }
 
 func (m *Manager) HandleEIP(ctx context.Context, eip *v1alpha2.Eip) error {
