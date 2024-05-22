@@ -95,7 +95,7 @@ func Run(opt *options.OpenELBSpeakerOptions) error {
 	}
 
 	ctx := ctrl.SetupSignalHandler()
-	spmanager := speaker.NewSpeakerManager(mgr.GetClient(), mgr.GetEventRecorderFor("speakerManager"))
+	spmanager := speaker.NewSpeakerManager(mgr)
 
 	//For gobgp
 	bgpServer := bgpd.NewGoBgpd(opt.Bgp)
@@ -154,7 +154,7 @@ func Run(opt *options.OpenELBSpeakerOptions) error {
 		klog.Fatalf("unable to setup eipcontroller: %v", err)
 	}
 
-	if err = mgr.Start(ctx); err != nil {
+	if err = spmanager.Start(ctx); err != nil {
 		klog.Fatalf("unable to run the manager: %v", err)
 	}
 

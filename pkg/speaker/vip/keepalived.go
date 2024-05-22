@@ -23,7 +23,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
-	k8sexec "k8s.io/utils/exec"
 )
 
 const (
@@ -206,12 +205,6 @@ func (k *keepAlived) Start(stopCh <-chan struct{}) error {
 		return err
 	}
 
-	errCh := make(chan error, 1)
-	go k.start(stopCh, errCh)
-	return <-errCh
-}
-
-func (k *keepAlived) start(stopCh <-chan struct{}, errCh chan error) {
 	var logWriter io.WriteCloser
 	if k.logPath != "" {
 		logWriter = &lumberjack.Logger{
@@ -237,17 +230,9 @@ func (k *keepAlived) start(stopCh <-chan struct{}, errCh chan error) {
 		k.cmd.Stderr = logWriter
 		if err := k.cmd.Start(); err != nil {
 			klog.Errorf("Keepalived start err: %s", err.Error())
-			select {
-			case errCh <- err:
-			default:
-			}
-			return
+			return err
 		}
 
-		select {
-		case errCh <- nil:
-		default:
-		}
 		klog.Infof("Keepalived: started with pid %d", k.cmd.Process.Pid)
 		crashCh := make(chan struct{})
 		go func() {
@@ -263,7 +248,7 @@ func (k *keepAlived) start(stopCh <-chan struct{}, errCh chan error) {
 		select {
 		case <-stopCh:
 			k.Stop()
-			return
+			return nil
 		case <-crashCh:
 		}
 	}
@@ -358,17 +343,6 @@ func newKeepalivedLogPiper() io.WriteCloser {
 
 // Stop stop keepalived process
 func (k *keepAlived) Stop() {
-	klog.Infof("Cleanup: %s", k.vips)
-	for _, i := range k.instances {
-		klog.Infof("removing configured VIP %v", i.Svcips)
-		for _, vip := range i.Svcips {
-			out, err := k8sexec.New().Command("ip", "addr", "del", vip+"/32", "dev", i.Iface).CombinedOutput()
-			if err != nil {
-				klog.V(2).Infof("Error removing VIP %s: %v\n%s", vip, err, out)
-			}
-		}
-	}
-
 	klog.Infof("stop keepalived process: %d", k.cmd.Process.Pid)
 	err := syscall.Kill(k.cmd.Process.Pid, syscall.SIGTERM)
 	if err != nil {
