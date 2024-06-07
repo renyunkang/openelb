@@ -99,6 +99,7 @@ var _ = framework.KubesphereDescribe("[OpenELB:VIP]", func() {
 		port := strconv.Itoa(int(svc.Spec.Ports[0].Port))
 		hostport := net.JoinHostPort(ingressIP, port)
 		address := fmt.Sprintf("http://%s/", hostport)
+		framework.Logf("address :%s", address)
 		framework.ExpectNoError(framework.Do(address))
 	})
 })
