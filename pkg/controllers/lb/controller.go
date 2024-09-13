@@ -278,7 +278,7 @@ func IsOpenELBService(obj runtime.Object) bool {
 			}
 		}
 
-		return validate.HasOpenELBAnnotation(svc.Annotations) && validate.IsTypeLoadBalancer(svc)
+		return validate.HasSpecifyOpenELB(svc.Spec.LoadBalancerClass, svc.Annotations) && validate.IsTypeLoadBalancer(svc)
 	}
 	return false
 }

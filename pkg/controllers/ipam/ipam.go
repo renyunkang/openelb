@@ -3,12 +3,13 @@ package ipam
 import (
 	"context"
 	"fmt"
-	"github.com/openelb/openelb/pkg/util/iprange"
 	"math/big"
 	"net"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/openelb/openelb/pkg/util/iprange"
 
 	networkv1alpha2 "github.com/openelb/openelb/api/v1alpha2"
 	"github.com/openelb/openelb/pkg/constant"
@@ -268,6 +269,10 @@ func needRelease(svc *v1.Service) bool {
 
 	if svc.Spec.Type != v1.ServiceTypeLoadBalancer {
 		return true
+	}
+
+	if svc.Spec.LoadBalancerClass != nil {
+		return *svc.Spec.LoadBalancerClass != constant.OpenELBClass
 	}
 
 	if value, ok := svc.Annotations[constant.OpenELBAnnotationKey]; !ok || value != constant.OpenELBAnnotationValue {

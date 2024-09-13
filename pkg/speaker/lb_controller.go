@@ -48,6 +48,9 @@ func IsOpenELBService(svc *corev1.Service) bool {
 		return false
 	}
 
+	if svc.Spec.LoadBalancerClass != nil {
+		return *svc.Spec.LoadBalancerClass == constant.OpenELBClass
+	}
 	return svc.Annotations[constant.OpenELBAnnotationKey] == constant.OpenELBAnnotationValue
 }
 

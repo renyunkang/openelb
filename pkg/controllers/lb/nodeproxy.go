@@ -437,7 +437,7 @@ func (r *ServiceReconciler) reconcileNP(svc *corev1.Service) (ctrl.Result, error
 // Such Service will be exposed by Proxy Pod
 func IsOpenELBNPService(obj runtime.Object) bool {
 	if svc, ok := obj.(*corev1.Service); ok {
-		return validate.HasOpenELBAnnotation(svc.Annotations) && validate.IsTypeLoadBalancer(svc) && validate.HasOpenELBNPAnnotation(svc.Annotations)
+		return validate.HasSpecifyOpenELB(svc.Spec.LoadBalancerClass, svc.Annotations) && validate.IsTypeLoadBalancer(svc) && validate.HasOpenELBNPAnnotation(svc.Annotations)
 	}
 	return false
 }

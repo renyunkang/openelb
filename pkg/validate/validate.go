@@ -8,7 +8,11 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-func HasOpenELBAnnotation(annotation map[string]string) bool {
+func HasSpecifyOpenELB(lbclass *string, annotation map[string]string) bool {
+	if lbclass != nil {
+		return *lbclass == constant.OpenELBClass
+	}
+
 	if value, ok := annotation[constant.OpenELBAnnotationKey]; ok {
 		if value == constant.OpenELBAnnotationValue {
 			return true

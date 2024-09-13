@@ -1,6 +1,7 @@
 package constant
 
 const (
+	OpenELBClass      string = "kubesphere.io/openelb"
 	FinalizerName     string = "finalizer.lb.kubesphere.io/v1alpha1"
 	IPAMFinalizerName string = "finalizer.ipam.kubesphere.io/v1alpha1"
 
